@@ -50,11 +50,11 @@ const App = () => {
 
   return (
     <div>
-      {counters.left}
+      <span> {counters.left}</span>
       <button onClick={handleLeft}>
         left
       </button>
-      {counters.right}
+      <span>{counters.right}</span>
       <button onClick={handleRight}>
         right
       </button>
