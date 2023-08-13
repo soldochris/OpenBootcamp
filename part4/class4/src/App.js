@@ -2,16 +2,24 @@ import "./App.css";
 import { Note } from "./Note.js";
 import { useEffect,useState } from "react";
 
+import axios from "axios";
+
 const App = () => {
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
+  const [loading,setLoading] = useState(false);
   
   useEffect(() => {
-    fetch('https://jsonplaceholder.typicode.com/posts')
-      .then((response)=>response.json())
-      .then((json)=>{
-        setNotes(json);
-      })
+    setLoading(true);
+
+    setTimeout(() => {
+      axios.get('https://jsonplaceholder.typicode.com/posts')
+      .then((response) => {
+        const {data} = response;
+        setNotes(data);
+        setLoading(false);
+      });
+    }, 1000);
   },[]);
 
   const handleChange = (event) => {
@@ -20,20 +28,31 @@ const App = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-
     const noteToAddToState = {
-      id: notes.length + 1,
       title: newNote,
-      body: newNote
+      body: newNote,
+      userId: 1
     };
-    setNotes(notes.concat(noteToAddToState));
+
+    axios
+      .post('https://jsonplaceholder.typicode.com/posts/', noteToAddToState )
+      .then( response => {
+        const {data} = response;
+        setNotes(notes.concat(data));
+        console.log(notes);
+      });
+
+    //setNotes(notes.concat(noteToAddToState));
     setNewNote("");
   };
 
   return (
-    <section>
+    <main >
       <h1>Notes</h1>
-      <ul>
+      {
+        loading ? <div className="lds-circle"><div></div></div> : '' 
+      }
+      <ul className="list-notes">
         {notes
           .map((note) => {
             return (
@@ -43,11 +62,11 @@ const App = () => {
             );
           })}
       </ul>
-      <form onSubmit={handleSubmit}>
-        <input type="text" onChange={handleChange} value={newNote} />
+      <form onSubmit={handleSubmit} className="new-note">
+        <input type="text" onChange={handleChange} value={newNote} placeholder="New note..."/>
         <button>Create note</button>
       </form>
-    </section>
+    </main>
   );
 };
 
