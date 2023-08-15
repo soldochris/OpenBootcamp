@@ -1,6 +1,7 @@
 const express = require("express");
-
 const app = express();
+
+app.use(express.json());
 
 let notes = [
   {
@@ -48,6 +49,29 @@ app.get("/api/notes/:id", (request, response) => {
   }else {
     response.status(404).end();
   }
+});
+
+app.post('/api/notes',(request, response) => {
+  const note = request.body;
+
+  if(!note || note.content){
+    return response.status(400);
+  }
+
+  const ids = notes.map(note => note.id);
+  const maxId = Math.max(...ids);
+
+  const newNote = {
+    id: maxId + 1,
+    content: note.content,
+    important: typeof note.important !== 'undefined' ? note.important : false,
+    date: new Date().toISOString()
+
+  }
+
+  notes = [...notes, newNote];
+
+  response.json(newNote);
 });
 
 app.delete("/api/notes/:id", (request, response) => {
