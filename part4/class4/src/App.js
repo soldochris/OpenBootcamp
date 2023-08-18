@@ -29,8 +29,7 @@ const App = () => {
     event.preventDefault();
     const noteToAddToState = {
       title: newNote,
-      body: newNote,
-      userId: 1
+      body: newNote
     };
 
     createNote(noteToAddToState).then((newNote) => {
