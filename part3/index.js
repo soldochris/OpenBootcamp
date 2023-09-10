@@ -1,58 +1,45 @@
+require("dotenv").config();
+require("./mongo.js");
 const express = require("express");
-const cors = require("cors");
-
 const app = express();
+const cors = require("cors");
+const Note = require("./models/Note.js");
 
 app.use(cors());
 app.use(express.json());
 
-let notes = [
-  {
-    id: 1,
-    title:
-      "Estudiar aut facere repellat provident occaecati excepturi optio reprehenderit",
-    body: "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto",
-  },
-  {
-    id: 2,
-    title: "qui est esse",
-    body: "est rerum tempore vitae\nsequi sint nihil reprehenderit dolor beatae ea dolores neque\nfugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis\nqui aperiam non debitis possimus qui neque nisi nulla",
-  },
-  {
-    id: 3,
-    title: "ea molestias quasi exercitationem repellat qui ipsa sit aut",
-    body: "et iusto sed quo iure\nvoluptatem occaecati omnis eligendi aut ad\nvoluptatem doloribus vel accusantium quis pariatur\nmolestiae porro eius odio et labore et velit aut",
-  },
-  {
-    id: 4,
-    title: "eum et est occaecati",
-    body: "ullam et saepe reiciendis voluptatem adipisci\nsit amet autem assumenda provident rerum culpa\nquis hic commodi nesciunt rem tenetur doloremque ipsam iure\nquis sunt voluptatem rerum illo velit",
-  },
-];
+let notes = [];
 
 app.get("/", (request, response) => {
   response.send("<h1>Hello World</h1>");
 });
 
 app.get("/api/notes", (request, response) => {
-  response.json(notes);
+  Note.find({}).then( notes =>
+    response.json(notes)
+  );
 });
 
-app.get("/api/notes/:id", (request, response) => {
-  const id = Number(request.params.id);
-  const note = notes.find(note => note.id === id);
-  if (note){
-    response.json(note);
+app.get("/api/notes/:id", (request, response, next) => {
+  const id = request.params.id;
 
-  }else {
-    response.status(404).end();
-  }
+  Note.findById(id).then(note => {
+    if (note) {
+      response.json(note);
+    } else {
+      response.status(404).send("Note not found 😞 ").end();
+    }
+  }).catch(err => {
+    next(err);
+  });
 });
 
-app.delete("/api/notes/:id", (request, response) => {
-  const id = Number(request.params.id);
-  notes = notes.filter(note => note.id !== id);
-  response.status(204).end();
+app.delete("/api/notes/:id", (request, response, next) => {
+  const {id} = request.params;
+
+  Note.findByIdAndRemove(id).then(result => {
+    response.status(204).end();
+  }).catch( error => next(error));
 });
 
 app.post("/api/notes",(request, response) => {
@@ -64,17 +51,38 @@ app.post("/api/notes",(request, response) => {
     });
   }
   
-  const ids = notes.map(note => note.id);
-  const maxId = Math.max(...ids);
-
-  const newNote = {
-    id: maxId + 1,
+  const newNote = new Note({
     title: note.title,
+    body: note.body
+  });
+
+  newNote.save().then( savedNote => {
+    response.status(201).json(savedNote);
+  });
+});
+
+app.put("/api/notes/:id", (request,response,next) => {
+  const {id} = request.params;
+  const note = request.body;
+
+  const newNoteInfo = {
     body: note.body
   };
 
-  notes = [...notes, newNote];
-  response.status(201).json(newNote);
+  Note.findByIdAndUpdate(id, newNoteInfo).
+    then(result => {
+      response.json(result);
+    });
+
+});
+
+app.use((error, request, response, next) => {
+  console.log(error.name);
+  if (error.name === "CastError"){
+    response.status(400).send({error: "Id used is malformed"});
+  } else {
+    response.status(500).end();
+  }
 });
 
 app.use((request,response) => {
@@ -83,7 +91,7 @@ app.use((request,response) => {
   });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
