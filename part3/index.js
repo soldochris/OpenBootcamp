@@ -4,11 +4,12 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const Note = require("./models/Note.js");
+const notFound = require("./middleware/notfound.js");
+const handleErrors = require("./middleware/handleErrors.js");
+
 
 app.use(cors());
 app.use(express.json());
-
-let notes = [];
 
 app.get("/", (request, response) => {
   response.send("<h1>Hello World</h1>");
@@ -37,7 +38,7 @@ app.get("/api/notes/:id", (request, response, next) => {
 app.delete("/api/notes/:id", (request, response, next) => {
   const {id} = request.params;
 
-  Note.findByIdAndRemove(id).then(result => {
+  Note.findByIdAndDelete(id).then(() => {
     response.status(204).end();
   }).catch( error => next(error));
 });
@@ -61,7 +62,7 @@ app.post("/api/notes",(request, response) => {
   });
 });
 
-app.put("/api/notes/:id", (request,response,next) => {
+app.put("/api/notes/:id", (request,response) => {
   const {id} = request.params;
   const note = request.body;
 
@@ -69,27 +70,16 @@ app.put("/api/notes/:id", (request,response,next) => {
     body: note.body
   };
 
-  Note.findByIdAndUpdate(id, newNoteInfo).
+  Note.findByIdAndUpdate(id, newNoteInfo, {new: true}).
     then(result => {
       response.json(result);
     });
 
 });
 
-app.use((error, request, response, next) => {
-  console.log(error.name);
-  if (error.name === "CastError"){
-    response.status(400).send({error: "Id used is malformed"});
-  } else {
-    response.status(500).end();
-  }
-});
+app.use(handleErrors);
 
-app.use((request,response) => {
-  response.status(404).json({
-    error: "Not Found"
-  });
-});
+app.use(notFound);
 
 const PORT = process.env.PORT;
 
