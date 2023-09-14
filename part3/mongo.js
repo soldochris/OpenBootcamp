@@ -11,17 +11,6 @@ mongoose.connect(connectionString)
     console.log(err);
   });
 
-
-// const note = new Note({
-//   title: "mongo db is incredible",
-//   body: "I'm learning to use mongo db with mongoose"
-// });
-
-// note.save()
-//   .then(result => {
-//     console.log(result);
-//     mongoose.connection.close();
-//   })
-//   .catch( err => {
-//     console.error(err);
-//   });
+process.on("uncaughtException", () => {
+  mongoose.connection.disconnect();
+});
